@@ -9,11 +9,44 @@ import requests
 ## NOTE OF ADVICE:
 ## When you go to make your GitHub milestones, think pretty seriously about all the different parts and their requirements, and what you need to understand. Make sure you've asked your questions about Part 2 as much as you need to before Fall Break!
 
+def get_from_cache(url, file_name):
+    try:
+        html = open(file_name, 'r').read()
+    except:
+        response = requests.get(url)
+        html = response.text
+        # same as doing: html = requests.get("http://www.nytimes.com/pages/todayspaper/index.html").text
+
+        f = open(file_name, 'w')
+        f.write(html)
+        f.close()
+
+    return html
 
 ######### PART 0 #########
 
 # Write your code for Part 0 here.
 
+gallery_html = get_from_cache("http://newmantaylor.com/gallery.html", 'gallery.html')
+gallery_soup = BeautifulSoup(gallery_html,'html.parser')
+
+gallery_img_list = gallery_soup.find_all("img")
+
+def print_alt_text(img_list):
+    img_num = 1
+    for bs_img in gallery_img_list:
+        if bs_img.get('alt'):
+            if bs_img.get('alt') == "Waving Kitty " + str(img_num):
+                print(bs_img.get('alt'))
+                img_num += 1
+            else:
+                print(bs_img.get('alt') + ": Wrong alternative text! Should be Waving Kitty {}.".format(img_num))
+                img_num += 1
+        else:
+            print("No alternative text provided!")
+            img_num += 1
+
+print_alt_text(gallery_img_list)
 
 ######### PART 1 #########
 
@@ -22,12 +55,15 @@ import requests
 # Try to get and cache main page data if not yet cached
 # Result of a following try/except block should be that
 # there exists a file nps_gov_data.html,
-# and the html text saved in it is stored in a variable 
+# and the html text saved in it is stored in a variable
 # that the rest of the program can access.
 
 # We've provided comments to guide you through the complex try/except, but if you prefer to build up the code to do this scraping and caching yourself, that is OK.
 
-
+nps_gov_data_html = get_from_cache("https://www.nps.gov/index.htm", 'nps_gov_data.html')
+arkansas_data_html = get_from_cache("https://www.nps.gov/state/ar/index.htm", 'arkansas_data.html')
+california_data_html = get_from_cache("https://www.nps.gov/state/ca/index.htm", 'california_data.html')
+michigan_data_html = get_from_cache("https://www.nps.gov/state/mi/index.htm", 'michigan_data.html')
 
 
 
@@ -37,15 +73,15 @@ import requests
 # Result of a following try/except block should be that
 # there exist 3 files -- arkansas_data.html, california_data.html, michigan_data.html
 # and the HTML-formatted text stored in each one is available
-# in a variable or data structure 
+# in a variable or data structure
 # that the rest of the program can access.
 
-# TRY: 
+# TRY:
 # To open and read all 3 of the files
 
 # But if you can't, EXCEPT:
 
-# Create a BeautifulSoup instance of main page data 
+# Create a BeautifulSoup instance of main page data
 # Access the unordered list with the states' dropdown
 
 # Get a list of all the li (list elements) from the unordered list, using the BeautifulSoup find_all method
@@ -135,4 +171,3 @@ import requests
 ## Note that running this step for ALL your data make take a minute or few to run -- so it's a good idea to test any methods/functions you write with just a little bit of data, so running the program will take less time!
 
 ## Also remember that IF you have None values that may occur, you might run into some problems and have to debug for where you need to put in some None value / error handling!
-
