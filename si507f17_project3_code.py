@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup, Tag
 import unittest
 import requests
+import re
 
 #########
 ## Instr note: the outline comments will stay as suggestions, otherwise it's too difficult.
@@ -10,9 +11,6 @@ import requests
 ## When you go to make your GitHub milestones, think pretty seriously about all the different parts and their requirements, and what you need to understand. Make sure you've asked your questions about Part 2 as much as you need to before Fall Break!
 
 def get_from_requests(url, file_name):
-    # try:
-    #     html = open(file_name, 'r').read()
-    # except:
     response = requests.get(url)
     html = response.text
     f = open(file_name, 'w')
@@ -93,7 +91,7 @@ try:
     california_data_html = open('california_data.html', 'r').read()
 except:
     url_ca = get_state_url("California", nps_gov_soup)
-    california_data_html = get_from_cache(url_ca, 'california_data.html')
+    california_data_html = get_from_requests(url_ca, 'california_data.html')
 
 california_soup = BeautifulSoup(california_data_html, 'html.parser')
 
@@ -102,7 +100,7 @@ try:
     michigan_data_html = open('michigan_data.html', 'r').read()
 except:
     url_mi = get_state_url("Michigan", nps_gov_soup)
-    michigan_data_html = get_from_cache(url_mi, 'michigan_data.html')
+    michigan_data_html = get_from_requests(url_mi, 'michigan_data.html')
 
 michigan_soup = BeautifulSoup(michigan_data_html, 'html.parser')
 
@@ -146,9 +144,6 @@ michigan_soup = BeautifulSoup(michigan_data_html, 'html.parser')
 
 
 
-
-
-
 ######### PART 2 #########
 
 ## Before truly embarking on Part 2, we recommend you do a few things:
@@ -168,20 +163,58 @@ michigan_soup = BeautifulSoup(michigan_data_html, 'html.parser')
 
 
 
-
-
 ## Define your class NationalSite here:
+class NationalSite(object):
+    def __init__(self, soup_park):
+        self.soup = soup_park  # don't forget to add self.
+        self.location = soup_park.find("h4").get_text()
+        self.name = soup_park.find("h3").get_text()
+        if soup_park.find("h2"):
+            self.type = soup_park.find("h2").get_text()
+        else:
+            self.type = None
 
+        if soup_park.find("p"):
+            self.description = soup_park.find("p").get_text()
+        else:
+            self.description = ""
 
+    def __str__(self):
+        return "**{0} {1} | {2}**".format(self.type, self.name, self.location)
 
+    def get_mailing_address(self):
+        for a in self.soup.find_all("a"):
+            if "Basic Information" in a.get_text():
+                child_url = a.get("href")
+                child_html = requests.get(child_url).text
+                soup_basic_info = BeautifulSoup(child_html, 'html.parser')
+                mailing_addr = soup_basic_info.find("div", {"class":"physical-address"}).get_text()
+                break
+            else:
+                mailing_addr = ""
+
+        lines = mailing_addr.strip().replace(',', "").splitlines()
+        lines_rm_br = []
+        for line in lines:
+            if line is not '':
+                lines_rm_br.append(line)
+        csv_mailing_addr = "/".join(lines_rm_br)
+        return csv_mailing_addr
+
+    def __contains__(self, input_name):
+        return input_name in self.name
 
 
 ## Recommendation: to test the class, at various points, uncomment the following code and invoke some of the methods / check out the instance variables of the test instance saved in the variable sample_inst:
 
 # f = open("sample_html_of_park.html",'r')
 # soup_park_inst = BeautifulSoup(f.read(), 'html.parser') # an example of 1 BeautifulSoup instance to pass into your class
+# # print(soup_park_inst.prettify())
 # sample_inst = NationalSite(soup_park_inst)
 # f.close()
+# print(str(sample_inst))
+# print(sample_inst.get_mailing_address())
+
 
 
 ######### PART 3 #########
@@ -190,7 +223,16 @@ michigan_soup = BeautifulSoup(michigan_data_html, 'html.parser')
 
 # HINT: Get a Python list of all the HTML BeautifulSoup instances that represent each park, for each state.
 
+def get_natl_sites(soup_state):
+    state_natl_sites = []
+    soup_park_list = soup_state.find("ul", {"id":"list_parks"}).find_all("li", {"class":"clearfix"})
+    for park in soup_park_list:
+        state_natl_sites.append(NationalSite(park))
+    return state_natl_sites
 
+arkansas_natl_sites = get_natl_sites(arkansas_soup)
+california_natl_sites = get_natl_sites(california_soup)
+michigan_natl_sites = get_natl_sites(michigan_soup)
 
 
 ##Code to help you test these out:
