@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 import unittest
 import requests
 
@@ -9,27 +9,27 @@ import requests
 ## NOTE OF ADVICE:
 ## When you go to make your GitHub milestones, think pretty seriously about all the different parts and their requirements, and what you need to understand. Make sure you've asked your questions about Part 2 as much as you need to before Fall Break!
 
-def get_from_cache(url, file_name):
-    try:
-        html = open(file_name, 'r').read()
-    except:
-        response = requests.get(url)
-        html = response.text
-        # same as doing: html = requests.get("http://www.nytimes.com/pages/todayspaper/index.html").text
-
-        f = open(file_name, 'w')
-        f.write(html)
-        f.close()
+def get_from_requests(url, file_name):
+    # try:
+    #     html = open(file_name, 'r').read()
+    # except:
+    response = requests.get(url)
+    html = response.text
+    f = open(file_name, 'w')
+    f.write(html)
+    f.close()
 
     return html
 
 ######### PART 0 #########
 
 # Write your code for Part 0 here.
+try:
+    gallery_html = open('gallery.html','r').read()
+except:
+    gallery_html = get_from_requests("http://newmantaylor.com/gallery.html", 'gallery.html')
 
-gallery_html = get_from_cache("http://newmantaylor.com/gallery.html", 'gallery.html')
 gallery_soup = BeautifulSoup(gallery_html,'html.parser')
-
 gallery_img_list = gallery_soup.find_all("img")
 
 def print_alt_text(img_list):
@@ -60,12 +60,51 @@ print_alt_text(gallery_img_list)
 
 # We've provided comments to guide you through the complex try/except, but if you prefer to build up the code to do this scraping and caching yourself, that is OK.
 
-nps_gov_data_html = get_from_cache("https://www.nps.gov/index.htm", 'nps_gov_data.html')
-arkansas_data_html = get_from_cache("https://www.nps.gov/state/ar/index.htm", 'arkansas_data.html')
-california_data_html = get_from_cache("https://www.nps.gov/state/ca/index.htm", 'california_data.html')
-michigan_data_html = get_from_cache("https://www.nps.gov/state/mi/index.htm", 'michigan_data.html')
+# Create Nps Mainpage Soup
+try:
+    nps_gov_data_html = open('nps_gov_data.html', 'r').read()
+except:
+    nps_gov_data_html = get_from_requests("https://www.nps.gov/index.htm", 'nps_gov_data.html')
+
+nps_gov_soup = BeautifulSoup(nps_gov_data_html, 'html.parser')
 
 
+# Define Method get_state_url
+def get_state_url(state_name, soup):
+    state_list = soup.find("ul",{"class":"dropdown-menu"}).find_all("a")
+    for state in state_list:
+        if state_name == state.get_text():
+            url = "https://www.nps.gov{}".format(state.get('href'))
+            break
+
+    return url
+
+# Create Arkanasas Soup
+try:
+    arkansas_data_html = open('arkansas_data.html', 'r').read()
+except:
+    url_ar = get_state_url("Arkansas", nps_gov_soup)
+    arkansas_data_html = get_from_requests(url_ar, 'arkansas_data.html')
+
+arkansas_soup = BeautifulSoup(arkansas_data_html, 'html.parser')
+
+# Create California Soup
+try:
+    california_data_html = open('california_data.html', 'r').read()
+except:
+    url_ca = get_state_url("California", nps_gov_soup)
+    california_data_html = get_from_cache(url_ca, 'california_data.html')
+
+california_soup = BeautifulSoup(california_data_html, 'html.parser')
+
+# Create Michigan Soup
+try:
+    michigan_data_html = open('michigan_data.html', 'r').read()
+except:
+    url_mi = get_state_url("Michigan", nps_gov_soup)
+    michigan_data_html = get_from_cache(url_mi, 'michigan_data.html')
+
+michigan_soup = BeautifulSoup(michigan_data_html, 'html.parser')
 
 
 # Get individual states' data...
