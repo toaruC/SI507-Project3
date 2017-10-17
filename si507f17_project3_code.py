@@ -180,7 +180,7 @@ class NationalSite(object):
             self.description = ""
 
     def __str__(self):
-        return "**{0} {1} | {2}**".format(self.type, self.name, self.location)
+        return "{0} | {1}".format(self.name, self.location)
 
     def get_mailing_address(self):
         for a in self.soup.find_all("a"):
