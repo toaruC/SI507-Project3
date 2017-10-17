@@ -183,23 +183,30 @@ class NationalSite(object):
         return "{0} | {1}".format(self.name, self.location)
 
     def get_mailing_address(self):
+        csv_mailing_addr = ""
         for a in self.soup.find_all("a"):
             if "Basic Information" in a.get_text():
                 child_url = a.get("href")
-                child_html = requests.get(child_url).text
-                soup_basic_info = BeautifulSoup(child_html, 'html.parser')
-                mailing_addr = soup_basic_info.find("div", {"class":"physical-address"}).get_text()
                 break
-            else:
-                mailing_addr = ""
 
-        lines = mailing_addr.strip().replace(',', "").splitlines()
-        lines_rm_br = []
-        for line in lines:
-            if line is not '':
-                lines_rm_br.append(line)
-        csv_mailing_addr = "/".join(lines_rm_br)
+        child_html = requests.get(child_url).text
+        soup_basic_info = BeautifulSoup(child_html, 'html.parser')
+
+        if soup_basic_info.find("div", {"class":"physical-address"}):
+            mailing_addr = soup_basic_info.find("div", {"class":"physical-address"}).get_text()
+            lines = mailing_addr.strip().replace(',', "").splitlines()
+            lines_rm_br = []
+            for line in lines:
+                if line is not '':
+                    lines_rm_br.append(line)
+            csv_mailing_addr = "/".join(lines_rm_br)
+
         return csv_mailing_addr
+        # else:
+        #     return "abcde"
+
+
+
 
     def __contains__(self, input_name):
         return input_name in self.name
@@ -207,13 +214,13 @@ class NationalSite(object):
 
 ## Recommendation: to test the class, at various points, uncomment the following code and invoke some of the methods / check out the instance variables of the test instance saved in the variable sample_inst:
 
-# f = open("sample_html_of_park.html",'r')
-# soup_park_inst = BeautifulSoup(f.read(), 'html.parser') # an example of 1 BeautifulSoup instance to pass into your class
-# # print(soup_park_inst.prettify())
-# sample_inst = NationalSite(soup_park_inst)
-# f.close()
-# print(str(sample_inst))
-# print(sample_inst.get_mailing_address())
+f = open("sample_html_of_park.html",'r')
+soup_park_inst = BeautifulSoup(f.read(), 'html.parser') # an example of 1 BeautifulSoup instance to pass into your class
+# print(soup_park_inst.prettify())
+sample_inst = NationalSite(soup_park_inst)
+f.close()
+print(str(sample_inst))
+print(sample_inst.get_mailing_address())
 
 
 
@@ -252,3 +259,45 @@ michigan_natl_sites = get_natl_sites(michigan_soup)
 ## Note that running this step for ALL your data make take a minute or few to run -- so it's a good idea to test any methods/functions you write with just a little bit of data, so running the program will take less time!
 
 ## Also remember that IF you have None values that may occur, you might run into some problems and have to debug for where you need to put in some None value / error handling!
+
+def convert_to_csv(natl_site):
+    natl_site_row_strings = [natl_site.name, natl_site.location, natl_site.type, natl_site.get_mailing_address(), natl_site.description.strip()]
+    csv_row_strings = []
+
+    # Q: is there any better/simpler solution?
+    for i in natl_site_row_strings:
+        if i:
+            if '"' in i:
+                result = i.replace('"', '""')
+                if ',' in i:
+                    csv_row_strings.append('"' + result + '"')
+                else:
+                    csv_row_strings.append(result)
+            else:
+                if ',' in i:
+                    csv_row_strings.append('"' + i + '"')
+                else:
+                    csv_row_strings.append(i)
+        else:
+            csv_row_strings.append("None")
+
+    return csv_row_strings
+
+
+def write_csv_resources(natl_sites, dir):
+    outfile = open(dir, "w")  # dir is the directory of csv file
+    header_columns = ["Name", "Location", "Type", "Address", "Description"]  # define header
+    outfile.write('{},{},{},{},{}\n'.format(*header_columns))  # no white space between attributes
+    for site in natl_sites:
+        outfile.write('{},{},{},{},{}\n'.format(*convert_to_csv(site)))
+    outfile.close()
+
+
+# write arkansas_natl_sites
+write_csv_resources(arkansas_natl_sites, "arkansas.csv")
+
+# write california_natl_sites
+write_csv_resources(california_natl_sites, "california.csv")
+
+# write michigan_natl_sites
+write_csv_resources(michigan_natl_sites, "michigan.csv")
